@@ -27,7 +27,7 @@ from mmap import MAP_SHARED
 
 import rospy
 import rospkg
-from ros_vosk.msg import speech_recognition
+from speech_to_text.msg import speech_recognition
 from std_msgs.msg import String, Bool
 
 import vosk_ros_model_downloader as downloader
@@ -36,17 +36,19 @@ class vosk_sr():
     def __init__(self):
         rospack = rospkg.RosPack()
         rospack.list()
-        package_path = rospack.get_path('ros_vosk')
+        package_path = rospack.get_path('ros-vosk')
         
         model_path = '/models/'
         model_dir = package_path + model_path
         model = "None" #change the name of the model to match the downloaded model's name
         
-        if not os.path.exists(model_dir+model):
+        if not bool(os.listdir(model_dir)):
             print ("No model found! Please use the GUI to download a model...")
             model_downloader = downloader.model_downloader()
             model_downloader.execute()
             model = model_downloader.model_to_download
+        else:
+            model = os.listdir(model_dir)[0]
         
         self.tts_status = False
 
@@ -80,13 +82,13 @@ class vosk_sr():
         rospy.set_param('vosk/sample_rate', self.samplerate)
 
         self.model = vosk.Model(model_dir+model_name)
-
+        self.tts_status_listenner()
         #TODO GPUInit automatically selects a CUDA device and allows multithreading.
         # gpu = vosk.GpuInit() #TODO
 
     
     def cleanup(self):
-        rospy.logwarn("Shutting down VOSK speech recognition node...")
+        rospy.logwarn("Shutting down vosk_node...")
     
     def stream_callback(self, indata, frames, time, status):
         #"""This is called (from a separate thread) for each audio block."""
@@ -98,7 +100,7 @@ class vosk_sr():
         self.tts_status = msg.data
 
     def tts_status_listenner(self):
-        rospy.Subscriber('/tts/status', Bool, self.tts_get_status)
+        rospy.Subscriber('is_speaking', Bool, self.tts_get_status)
 
     def speech_recognize(self):    
         try:
@@ -108,13 +110,11 @@ class vosk_sr():
                 rospy.logdebug('Started recording')
                 
                 rec = vosk.KaldiRecognizer(self.model, self.samplerate)
-                print("Vosk is ready to listen!")
+                print("vosk_node is ready to listen!")
                 isRecognized = False
                 isRecognized_partially = False
                 
-            
-                while not rospy.is_shutdown():
-                    self.tts_status_listenner()
+                while not rospy.is_shutdown():       
 
                     if self.tts_status == True:
                         # If the text to speech is operating, clear the queue
@@ -178,16 +178,16 @@ class vosk_sr():
         except Exception as e:
             exit(type(e).__name__ + ': ' + str(e))
         except KeyboardInterrupt:
-            rospy.loginfo("Stopping the VOSK speech recognition node...")
+            rospy.loginfo("Stopping the vosk_node...")
             rospy.sleep(1)
             print("node terminated")
 
 if __name__ == '__main__':
     try:
-        rospy.init_node('vosk', anonymous=False)
+        rospy.init_node('vosk_node', anonymous=False)
         rec = vosk_sr()
         rec.speech_recognize()
     except (KeyboardInterrupt, rospy.ROSInterruptException) as e:
-        rospy.logfatal("Error occurred! Stopping the vosk speech recognition node...")
+        rospy.logfatal("Error occurred! Stopping the vosk_node...")
         rospy.sleep(1)
         print("node terminated")
