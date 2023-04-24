@@ -27,7 +27,7 @@ from mmap import MAP_SHARED
 
 import rospy
 import rospkg
-from speech_to_text.msg import speech_recognition
+from ros_vosk.msg import speech_recognition
 from std_msgs.msg import String, Bool
 
 import vosk_ros_model_downloader as downloader
@@ -36,7 +36,7 @@ class vosk_sr():
     def __init__(self):
         rospack = rospkg.RosPack()
         rospack.list()
-        package_path = rospack.get_path('ros-vosk')
+        package_path = rospack.get_path('ros_vosk')
         
         model_path = '/models/'
         model_dir = package_path + model_path
