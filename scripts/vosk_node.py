@@ -32,6 +32,9 @@ from std_msgs.msg import String, Bool
 
 import vosk_ros_model_downloader as downloader
 
+from vosk import SetLogLevel
+SetLogLevel(-1)
+
 class vosk_sr():
     def __init__(self):
         rospack = rospkg.RosPack()
@@ -60,7 +63,7 @@ class vosk_sr():
 
         self.rate = rospy.Rate(100)
 
-        rospy.on_shutdown(self.cleanup)
+        #rospy.on_shutdown(self.cleanup)
 
         model_name = rospy.get_param('vosk/model',model)
         if not rospy.has_param('vosk/model'):
@@ -134,7 +137,7 @@ class vosk_sr():
 
                             if lentext > 2:
                                 result_text = diction["text"]
-                                rospy.loginfo(result_text)
+                                #rospy.loginfo(result_text)
                                 isRecognized = True
                             else:
                                 isRecognized = False
